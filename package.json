@@ -1,0 +1,60 @@
+{
+	"name": "@jxscout/pro-installer",
+	"version": "0.0.1",
+	"license": "MIT",
+	"bin": "dist/cli.js",
+	"type": "module",
+	"engines": {
+		"node": ">=16"
+	},
+	"scripts": {
+		"build": "bun build src/cli.tsx --target=node --outfile dist/cli.js --minify",
+		"dev": "tsc --watch",
+		"test": "prettier --check ."
+	},
+	"files": [
+		"dist"
+	],
+	"ava": {
+		"extensions": {
+			"ts": "module",
+			"tsx": "module"
+		},
+		"nodeArguments": [
+			"--loader=ts-node/esm"
+		]
+	},
+	"xo": {
+		"react": true,
+		"prettier": true,
+		"semicolon": true,
+		"rules": {
+			"react/prop-types": "off"
+		}
+	},
+	"prettier": "@vdemedes/prettier-config",
+	"dependencies": {
+		"ink": "^6.3.1",
+		"ink-select-input": "^6.2.0",
+		"ink-spinner": "^5.0.0",
+		"ink-text-input": "^6.0.0",
+		"meow": "^10.0.0",
+		"react": "^19.1.1",
+		"tar": "^7.2.0"
+	},
+	"devDependencies": {
+		"@sindresorhus/tsconfig": "^8.0.1",
+		"@types/react": "^19.1.13",
+		"@vdemedes/prettier-config": "^2.0.1",
+		"ava": "^6.4.1",
+		"chalk": "^5.6.2",
+		"eslint-config-xo-react": "^0.28.0",
+		"eslint-plugin-react": "^7.37.5",
+		"eslint-plugin-react-hooks": "^5.2.0",
+		"ink-testing-library": "^4.0.0",
+		"prettier": "^3.6.2",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.9.2",
+		"xo": "^1.2.2"
+	}
+}
