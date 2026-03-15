@@ -1,5 +1,5 @@
 import fs, {createReadStream, createWriteStream} from 'fs';
-import {Box, Text} from 'ink';
+import {Box, Text, useApp} from 'ink';
 import os from 'os';
 import path from 'path';
 import {useEffect, useState} from 'react';
@@ -9,6 +9,8 @@ import {createGunzip} from 'zlib';
 import {deleteLicenseKey, errorToString, runCommand} from '../../utils.js';
 import {Spinner} from '../spinner.js';
 import {InstallerStatus} from './index.js';
+
+const DEPRECATED_VERSION = '2.0.0';
 
 export enum ReleaseType {
 	LINUX_386 = 'linux-386',
@@ -64,7 +66,7 @@ const downloadCLI = async (
 	licenseKey: string = '',
 	releaseType: ReleaseType = getReleaseType(),
 	downloadPath: string = DEFAULT_DOWNLOAD_PATH,
-): Promise<{archivePath: string; version: string}> => {
+): Promise<{archivePath: string; version: string; deprecated?: boolean}> => {
 	const params = new URLSearchParams({
 		version,
 		type: releaseType,
@@ -91,6 +93,10 @@ const downloadCLI = async (
 		version: string;
 	};
 
+	if (returnedVersion === DEPRECATED_VERSION) {
+		return {archivePath: '', version: returnedVersion, deprecated: true};
+	}
+
 	if (!fs.existsSync(downloadPath)) {
 		fs.mkdirSync(downloadPath, {recursive: true});
 	}
@@ -112,7 +118,7 @@ const downloadCLI = async (
 	const fileStream = createWriteStream(filePath);
 	await pipeline(downloadResponse.body as any, fileStream);
 
-	return {archivePath: filePath, version: returnedVersion};
+	return {archivePath: filePath, version: returnedVersion, deprecated: false};
 };
 
 const extractAndInstall = async (
@@ -192,6 +198,8 @@ export const DownloadCLIStep = ({
 	);
 	const [downloadError, setDownloadError] = useState<string | null>(null);
 	const [actualVersion, setActualVersion] = useState<string | null>(null);
+	const [isDeprecated, setIsDeprecated] = useState(false);
+	const {exit} = useApp();
 
 	useEffect(() => {
 		if (currentStep === CLIStep.DOWNLOADING) {
@@ -199,12 +207,20 @@ export const DownloadCLIStep = ({
 				setDownloadStatus(InstallerStatus.LOADING);
 				try {
 					const releaseType = getReleaseType();
-					const {archivePath, version} = await downloadCLI(
+					const {archivePath, version, deprecated} = await downloadCLI(
 						cliVersion,
 						licenseKey,
 						releaseType,
 						DEFAULT_DOWNLOAD_PATH,
 					);
+
+					if (deprecated) {
+						setIsDeprecated(true);
+						setTimeout(() => {
+							exit();
+						}, 100);
+						return;
+					}
 
 					setActualVersion(version);
 					onVersionUpdate?.(version);
@@ -231,6 +247,21 @@ export const DownloadCLIStep = ({
 			downloadAndInstall();
 		}
 	}, [currentStep, licenseKey, onComplete]);
+
+	if (isDeprecated) {
+		const downloadUrl = `https://jxscout.app/v2/download?licenseKey=${encodeURIComponent(licenseKey)}`;
+		return (
+			<Box flexDirection="column" gap={1}>
+				<Text bold color="yellow">
+					This installer has been deprecated.
+				</Text>
+				<Text>jxscout pro v2 is now available! Please download it from:</Text>
+				<Text bold color="cyan">
+					{downloadUrl}
+				</Text>
+			</Box>
+		);
+	}
 
 	const renderStep = () => {
 		switch (currentStep) {
